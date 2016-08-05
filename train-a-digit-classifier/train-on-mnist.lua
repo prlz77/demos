@@ -23,6 +23,9 @@ require 'image'
 require 'dataset-mnist'
 require 'pl'
 require 'paths'
+require 'cutorch'
+require 'cunn'
+require 'cudnn'
 
 ----------------------------------------------------------------------
 -- parse command-line options
@@ -120,6 +123,8 @@ else
    model = torch.load(opt.network)
 end
 
+model:cuda()
+
 -- retrieve parameters and gradients
 parameters,gradParameters = model:getParameters()
 
@@ -130,8 +135,8 @@ print(model)
 ----------------------------------------------------------------------
 -- loss function: negative log-likelihood
 --
-model:add(nn.LogSoftMax())
-criterion = nn.ClassNLLCriterion()
+model:add(nn.LogSoftMax():cuda())
+criterion = nn.ClassNLLCriterion():cuda()
 
 ----------------------------------------------------------------------
 -- get/create dataset
@@ -177,8 +182,8 @@ function train(dataset)
    print("<trainer> online epoch # " .. epoch .. ' [batchSize = ' .. opt.batchSize .. ']')
    for t = 1,dataset:size(),opt.batchSize do
       -- create mini batch
-      local inputs = torch.Tensor(opt.batchSize,1,geometry[1],geometry[2])
-      local targets = torch.Tensor(opt.batchSize)
+      local inputs = torch.CudaTensor(opt.batchSize,1,geometry[1],geometry[2])
+      local targets = torch.CudaTensor(opt.batchSize)
       local k = 1
       for i = t,math.min(t+opt.batchSize-1,dataset:size()) do
          -- load new sample
@@ -303,8 +308,8 @@ function test(dataset)
       xlua.progress(t, dataset:size())
 
       -- create mini batch
-      local inputs = torch.Tensor(opt.batchSize,1,geometry[1],geometry[2])
-      local targets = torch.Tensor(opt.batchSize)
+      local inputs = torch.CudaTensor(opt.batchSize,1,geometry[1],geometry[2])
+      local targets = torch.CudaTensor(opt.batchSize)
       local k = 1
       for i = t,math.min(t+opt.batchSize-1,dataset:size()) do
          -- load new sample
